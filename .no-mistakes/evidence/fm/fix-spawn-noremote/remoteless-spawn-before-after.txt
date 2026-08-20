@@ -1,0 +1,58 @@
+Remoteless (local-only, no git remote) spawn - real bin/fm-spawn.sh driven end to end
+with a real pooled git worktree and a fake tmux/treehouse so no terminal is created.
+Same fixture shape in both runs: local main advanced after the pool worktree was handed out.
+
+=== BEFORE THE FIX (base commit 1cb900c) ===
+$ git -C project remote -v      # local-only project, no remote configured
+$ git -C project log --oneline -1 main
+42d7e56 advance-local-main
+$ git -C pool log --oneline -1 HEAD    # pooled worktree still on the stale base
+bb0f96b initial
+
+$ fm-spawn.sh ship-remoteless-demo-a1 <project> --scout
+Please make sure you have the correct access rights
+and the repository exists.
+error: could not fetch origin for pooled worktree '/tmp/repro-before/pool'; refusing to launch from a potentially stale base
+exit status: 1
+
+$ git -C pool log --oneline -1 HEAD    # base the scout actually launches from
+bb0f96b initial
+pool HEAD (bb0f96be203e99e58f024d48dcf18c0a88b7d9ef) != local main tip (42d7e5618814eb638a19c89c8b423374c55bdca1)  -> NOT refreshed
+$ ls pool/newest.txt
+ls: cannot access '/tmp/repro-before/pool/newest.txt': No such file or directory
+
+=== AFTER THE FIX (target commit c8cca8f) ===
+$ git -C project remote -v      # local-only project, no remote configured
+$ git -C project log --oneline -1 main
+23fae49 advance-local-main
+$ git -C pool log --oneline -1 HEAD    # pooled worktree still on the stale base
+500a8fa initial
+
+$ fm-spawn.sh ship-remoteless-demo-a1 <project> --scout
+spawned ship-remoteless-demo-a1 harness=codex kind=scout window=firstmate:fm-ship-remoteless-demo-a1 worktree=/tmp/repro-after/pool
+exit status: 0
+
+$ git -C pool log --oneline -1 HEAD    # base the scout actually launches from
+23fae49 advance-local-main
+pool HEAD == local main tip (23fae49dda737f3fbfb1c87afb676297cc1419c8)  -> launched from the freshest local base
+$ ls pool/newest.txt
+/tmp/repro-after/pool/newest.txt
+
+=== AFTER THE FIX - SHIP spawn (target commit c8cca8f) ===
+$ git -C project remote -v      # local-only project, no remote configured
+$ git -C project log --oneline -1 main
+9ba2404 advance-local-main
+$ git -C pool log --oneline -1 HEAD    # pooled worktree still on the stale base
+dad2e91 initial
+
+$ fm-spawn.sh ship-remoteless-demo-a1 <project> --mode no-mistakes --yolo off
+warning: /tmp/repro-after-ship/home/data/ship-remoteless-demo-a1/brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+spawned ship-remoteless-demo-a1 harness=codex kind=ship mode=no-mistakes yolo=off window=firstmate:fm-ship-remoteless-demo-a1 worktree=/tmp/repro-after-ship/pool
+exit status: 0
+
+$ git -C pool log --oneline -1 HEAD    # base the scout actually launches from
+9ba2404 advance-local-main
+pool HEAD == local main tip (9ba2404cacde4e122f0097c4a237f74c3aa544b1)  -> launched from the freshest local base
+$ ls pool/newest.txt
+/tmp/repro-after-ship/pool/newest.txt
+

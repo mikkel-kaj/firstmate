@@ -1,0 +1,17 @@
+  see AGENTS.md task lifecycle); --secondmate records kind=secondmate and launches in a
+  provisioned firstmate home; the default is kind=ship.
+  Before a secondmate launch, the home is locally fast-forwarded to the primary
+  default-branch commit when safe; skipped syncs warn and launch unchanged.
+  Ship/scout spawns refuse to launch unless the resolved task path is a real
+  git worktree root distinct from the primary project checkout.
+  Before a fresh ship or scout worker starts, its clean task worktree fetches
+  origin, resolves the current remote default branch, and resets to its tip.
+  A repository with no origin remote configured (a supported local-only
+  project shape) skips the fetch and instead resets the clean worktree to the
+  tip of the local default branch - local main or master, else the branch the
+  primary checkout is on - which the shared object store keeps as the
+  freshest base.
+  An unreachable origin, an unresolved remote or local default branch, or a
+  non-clean worktree refuses the spawn rather than risking a PR based on
+  stale history.
+Batch dispatch: pass one or more `id=repo` pairs instead of a single <id> <project>, e.g.
